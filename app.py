@@ -59,18 +59,20 @@ def get_events(order_id):
 
 def estrai_commenti_con_ca(data_inizio, data_fine):
     orders = get_orders()
+
+    # Filtra solo gli ordini nel range di date
+    ordini_filtrati = [
+        o for o in orders
+        if data_inizio <= datetime.fromisoformat(o["created_at"].replace("Z", "+00:00")).date() <= data_fine
+    ]
+
     dati_filtrati = []
     progress = st.progress(0)
 
-    for i, order in enumerate(orders):
+    for i, order in enumerate(ordini_filtrati):
         order_id = order["id"]
         order_name = order["name"]
         created_at_str = order["created_at"]
-        created_at = datetime.fromisoformat(created_at_str.replace("Z", "+00:00")).date()
-
-        # Filtra per intervallo di date
-        if not (data_inizio <= created_at <= data_fine):
-            continue
 
         eventi = get_events(order_id)
         time.sleep(0.3)
@@ -95,7 +97,7 @@ def estrai_commenti_con_ca(data_inizio, data_fine):
             elif "ca" in messaggio:
                 print(f"[SCARTATO] Autore non compatibile: {autore} → ordine {order_name}")
 
-        progress.progress((i + 1) / len(orders))
+        progress.progress((i + 1) / len(ordini_filtrati))
 
     return pd.DataFrame(dati_filtrati)
 
