@@ -17,12 +17,32 @@ headers = {
 
 # --- FUNZIONI ---
 def get_orders():
-    url = f"{SHOP_URL}/admin/api/{API_VERSION}/orders.json?status=any&limit=250"
-    response = requests.get(url, headers=headers)
-    if response.status_code != 200:
-        st.error(f"Errore {response.status_code}: {response.text}")
-        return []
-    return response.json().get("orders", [])
+    orders = []
+    url = f"{SHOP_URL}/admin/api/{API_VERSION}/orders.json?status=any&limit=50"
+
+    while url:
+        response = requests.get(url, headers=headers)
+        if response.status_code != 200:
+            st.error(f"Errore {response.status_code}: {response.text}")
+            break
+
+        data = response.json().get("orders", [])
+        orders.extend(data)
+
+        # Estrai link alla pagina successiva dal header
+        link_header = response.headers.get("Link")
+        if link_header and 'rel="next"' in link_header:
+            parts = link_header.split(",")
+            next_url = None
+            for part in parts:
+                if 'rel="next"' in part:
+                    next_url = part.split(";")[0].strip().strip("<>")
+                    break
+            url = next_url
+        else:
+            url = None
+
+    return orders
 
 def get_events(order_id):
     url = f"{SHOP_URL}/admin/api/{API_VERSION}/orders/{order_id}/events.json"
@@ -53,7 +73,10 @@ def estrai_commenti_con_ca(data_inizio, data_fine):
             continue
 
         eventi = get_events(order_id)
-        time.sleep(0.3)  # attesa tra le richieste
+        time.sleep(0.3)
+
+        if not eventi:
+            print(f"[INFO] Nessun evento per ordine {order_name}")
 
         for ev in eventi:
             autore = ev.get("author", "").strip().lower()
