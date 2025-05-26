@@ -57,7 +57,7 @@ def estrai_commenti_con_ca(data_inizio, data_fine):
             print(f"[DEBUG] Ordine: {order_name}, Autore: {autore}, Messaggio: {messaggio}")
             if (
                 "ca" in messaggio and
-                autore == "chiara azzaretto"
+                "chiara" in autore and "azzaretto" in autore
             ):
                 dati_filtrati.append({
                     "Numero Ordine": order_name,
@@ -65,6 +65,8 @@ def estrai_commenti_con_ca(data_inizio, data_fine):
                     "Commento": ev["message"],
                     "Data Commento": ev["created_at"]
                 })
+            elif "ca" in messaggio:
+                print(f"[SCARTATO] Autore non compatibile: {autore} → ordine {order_name}")
 
         progress.progress((i + 1) / len(orders))
 
