@@ -26,11 +26,15 @@ def get_orders():
 
 def get_events(order_id):
     url = f"{SHOP_URL}/admin/api/{API_VERSION}/orders/{order_id}/events.json"
-    response = requests.get(url, headers=headers)
-    if response.status_code == 200:
-        return response.json().get("events", [])
-    else:
-        print(f"[ERRORE] Eventi non trovati per ordine {order_id}: {response.status_code}")
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        if response.status_code == 200:
+            return response.json().get("events", [])
+        else:
+            print(f"[ERRORE] Eventi non trovati per ordine {order_id}: {response.status_code}")
+            return []
+    except requests.exceptions.RequestException as e:
+        print(f"[FALLITO] Errore di rete per ordine {order_id}: {e}")
         return []
 
 def estrai_commenti_con_ca(data_inizio, data_fine):
