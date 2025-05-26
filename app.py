@@ -3,6 +3,7 @@ import pandas as pd
 import streamlit as st
 from io import BytesIO
 from datetime import datetime, date
+import time
 
 # --- CONFIGURAZIONE ---
 SHOP_URL = st.secrets["SHOP_URL"]
@@ -29,13 +30,15 @@ def get_events(order_id):
     if response.status_code == 200:
         return response.json().get("events", [])
     else:
+        print(f"[ERRORE] Eventi non trovati per ordine {order_id}: {response.status_code}")
         return []
 
 def estrai_commenti_con_ca(data_inizio, data_fine):
     orders = get_orders()
     dati_filtrati = []
+    progress = st.progress(0)
 
-    for order in orders:
+    for i, order in enumerate(orders):
         order_id = order["id"]
         order_name = order["name"]
         created_at_str = order["created_at"]
@@ -46,11 +49,15 @@ def estrai_commenti_con_ca(data_inizio, data_fine):
             continue
 
         eventi = get_events(order_id)
+        time.sleep(0.3)  # attesa tra le richieste
+
         for ev in eventi:
+            autore = ev.get("author", "").strip().lower()
+            messaggio = ev.get("message", "").strip().lower()
+            print(f"[DEBUG] Ordine: {order_name}, Autore: {autore}, Messaggio: {messaggio}")
             if (
-                "message" in ev and
-                "ca" in ev["message"].lower() and
-                ev.get("author", "").lower() == "chiara azzaretto"
+                "ca" in messaggio and
+                autore == "chiara azzaretto"
             ):
                 dati_filtrati.append({
                     "Numero Ordine": order_name,
@@ -58,6 +65,8 @@ def estrai_commenti_con_ca(data_inizio, data_fine):
                     "Commento": ev["message"],
                     "Data Commento": ev["created_at"]
                 })
+
+        progress.progress((i + 1) / len(orders))
 
     return pd.DataFrame(dati_filtrati)
 
